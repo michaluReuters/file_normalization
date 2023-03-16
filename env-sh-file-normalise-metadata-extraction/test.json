@@ -1,0 +1,38 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "eu-west-2",
+      "eventTime": "2023-03-15T12:40:29.326Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "A2F0YVBJKICZCO"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "147.161.249.91"
+      },
+      "responseElements": {
+        "x-amz-request-id": "TWTAMTDFVV8YJMBP",
+        "x-amz-id-2": "5/CKyPbtHzt1lcnkJeuuNupheZmyMRlj480MxXmyGqy4tos2eZjmWcdJsgZZLtUMGbeVqWs8ZqrfW3tNkUBdPWweIwwWam7C5+M6ZOemjgw="
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "af4d9142-9bb0-4c47-9f2b-ed74b057ff5d",
+        "bucket": {
+          "name": "filenormalizations3bucket",
+          "ownerIdentity": {
+            "principalId": "A2F0YVBJKICZCO"
+          },
+          "arn": "arn:aws:s3:::filenormalizations3bucket"
+        },
+        "object": {
+          "key": "MGTest6.mp4",
+          "size": 1670815,
+          "eTag": "2d38b2ee61913d32c7654a70d29c6513",
+          "sequencer": "006411BCBD38BC01F0"
+        }
+      }
+    }
+  ]
+}
