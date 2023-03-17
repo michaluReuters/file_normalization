@@ -104,7 +104,7 @@ class FFStream:
         for a in datalines:
             (key, val) = a.strip().split('=')
             self.__dict__[key] = val
-        self.codec_type = self.__dict__["codec_type"]
+        self.codec_type = self.__dict__['codec_type']
 
     def is_audio(self):
         """
@@ -128,53 +128,57 @@ class FFStream:
 
 
 class FFprobeDTO:
-    # TODO HERE WE WILL ASK APP CONFIG FOR THE REQUIRED CONFIGURATION
-    required_video_stream_variables = (
-        "codec_type",
-        "codec_name",
-        "width",
-        "height",
-        "field_order",
-        "r_framerate",
-        "avg_frame_rate",
-        "time_base",
-        "pix_fmt",
-        "color_range",
-        "colour_space",
-        "transfer",
-        "primaries"
-    )
-
-    required_audio_stream_variables = (
-        "codec_type",
-        "codec_name",
-        "sample_rate",
-        "bits_per_sample",
-        "channels"
-    )
+    # TODO HERE WE WILL ASK APP CONFIG FOR THE REQUIRED CONFIGURATION 17/03/2023
+    dict_gather = {
+        # TODO this variable is a representation of what to expect from App Config 17/03/2023
+        "data":
+            [
+                {
+                    "source-field": "codec_name",
+                    "destination-field": "x-amz-meta-video-codec"
+                },
+                {
+                    "source-field": "width",
+                    "destination-field": "x-amz-meta-video-Resolution-Width"
+                },
+                {
+                    "source-field": "height",
+                    "destination-field": "x-amz-meta-video-Resolution-Height"
+                },
+                {
+                    "source-field": "field_order",
+                    "destination-field": "x-amz-meta-video-field_order"
+                },
+                {
+                    "source-field": "sample_rate",
+                    "destination-field": "x-amz-meta-audio-sample_rate"
+                }
+            ]
+    }
+    required_data = {i['source-field'] for i in dict_gather['data']}
+    required_data_tuple = tuple(required_data)
+    required_destination = [{i['source-field']: i['destination-field'] for i in dict_gather['data']}]
+    required_destination_tuple = tuple(required_destination)
 
     def __init__(self):
         self.data = {}
+        self.destination_data = {}
 
-    def gather_required_data(self, metadata: FFProbe, audio_data=required_audio_stream_variables,
-                             video_data=required_video_stream_variables):
+    def gather_required_data(self, metadata: FFProbe, data=required_data_tuple):
+
         count = 0
         for stream in metadata.streams:
-            self.data[f"index_{count}"] = {}
-            if stream.is_audio():
-                for i in audio_data:
-                    try:
-                        if bool(stream.__dict__[i]):
-                            self.data[f"index_{count}"][i] = stream.__dict__[i]
-                    except Exception as exc:
-                        print(f"Unable to find reference for: {exc}")
-                        pass
-            elif stream.is_video():
-                for i in video_data:
-                    try:
-                        if bool(stream.__dict__[i]):
-                            self.data[f"index_{count}"][i] = stream.__dict__[i]
-                    except Exception as exc:
-                        print(f"Unable to find reference for: {exc}")
-                        pass
-            count += 1
+            for i in data:
+                try:
+                    if bool(stream.__dict__[i]):
+                        self.data[i] = stream.__dict__[i]
+                except Exception as exc:
+                    print(f'Unable to find reference for: {exc}')
+                    pass
+        count += 1
+
+    def assign_data_to_proper_destinations(self, destination=required_destination_tuple):
+        if bool(self.data):
+            for key, value in self.data.items():
+                if key in destination[0].keys():
+                    self.destination_data[destination[0][key]] = self.data[key]
