@@ -1,7 +1,6 @@
 from aws_lambda_powertools import Logger
 from model import FFProbe, FFprobeDTO
 
-import json
 import os
 import boto3
 
@@ -16,18 +15,25 @@ def handler(event, context):
 
     try:
         local_file_name = '/tmp/' + event_object
-        s3client.Bucket(event_bucket).download_file(event_object, local_file_name)
-        metadata = FFProbe(video_file=local_file_name)
 
-        result = FFprobeDTO()
-        result.gather_required_data(metadata)
-        result.assign_data_to_proper_destinations()
+        logger.info(f"Looking for S3 object: {event_object} in S3 bucket; {event_bucket}")
+        try:
+            s3client.Bucket(event_bucket).download_file(event_object, local_file_name)
+        except Exception as exc:
+            logger.error(f"There was an error while fetching {event_object}. Exception is: {exc}")
 
-        cleared = {k: v for k, v in result.data.items() if bool(v)}
-        logger.info(f"Cleared fields: {json.dumps(cleared, indent=4)}")
-        os.system(f"rm /tmp/{event_object}")
-        logger.info(f"Result Data: {result.data}")
-        return result.destination_data
+        try:
+            metadata = FFProbe(video_file=local_file_name)
+
+            result = FFprobeDTO()
+            result.gather_required_data(metadata)
+            result.assign_data_to_proper_destinations()
+
+            os.system(f"rm /tmp/{event_object}")
+            logger.info(f"Result Data: {result.destination_data}")
+            return result.destination_data
+        except Exception as exc:
+            logger.error(f"There was an error while gathering metadata from ffprobe. Exception is: {exc}")
     # TODO Also we would need to modify the s3 object metadata with one gathered from this step 17/03/2023
     except Exception as exc:
         logger.info(f"There has been exception. Exception is: {exc}")

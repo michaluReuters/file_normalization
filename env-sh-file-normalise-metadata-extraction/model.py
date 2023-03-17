@@ -1,7 +1,10 @@
+from aws_lambda_powertools import Logger
 import os
 import platform
 import re
 import subprocess
+
+logger = Logger()
 
 
 def slice_stream_tags(datalines: []) -> []:
@@ -173,7 +176,7 @@ class FFprobeDTO:
                     if bool(stream.__dict__[i]):
                         self.data[i] = stream.__dict__[i]
                 except Exception as exc:
-                    print(f'Unable to find reference for: {exc}')
+                    logger.warn(f'Unable to find reference for: {exc}')
                     pass
         count += 1
 
