@@ -1,11 +1,14 @@
+import json
+
 from aws_lambda_powertools import Logger
+from utils import get_latest_configuration
 import os
 import platform
 import re
 import subprocess
 
 logger = Logger()
-
+configuration = json.loads(get_latest_configuration())
 
 def slice_stream_tags(datalines: []) -> []:
     """
@@ -131,36 +134,9 @@ class FFStream:
 
 
 class FFprobeDTO:
-    # TODO HERE WE WILL ASK APP CONFIG FOR THE REQUIRED CONFIGURATION 17/03/2023
-    dict_gather = {
-        # TODO this variable is a representation of what to expect from App Config 17/03/2023
-        "data":
-            [
-                {
-                    "source-field": "codec_name",
-                    "destination-field": "x-amz-meta-video-codec"
-                },
-                {
-                    "source-field": "width",
-                    "destination-field": "x-amz-meta-video-Resolution-Width"
-                },
-                {
-                    "source-field": "height",
-                    "destination-field": "x-amz-meta-video-Resolution-Height"
-                },
-                {
-                    "source-field": "field_order",
-                    "destination-field": "x-amz-meta-video-field_order"
-                },
-                {
-                    "source-field": "sample_rate",
-                    "destination-field": "x-amz-meta-audio-sample_rate"
-                }
-            ]
-    }
-    required_data = {i['source-field'] for i in dict_gather['data']}
+    required_data = {i['source-field'] for i in configuration['data']}
     required_data_tuple = tuple(required_data)
-    required_destination = [{i['source-field']: i['destination-field'] for i in dict_gather['data']}]
+    required_destination = [{i['source-field']: i['destination-field'] for i in configuration['data']}]
     required_destination_tuple = tuple(required_destination)
 
     def __init__(self):
@@ -174,10 +150,12 @@ class FFprobeDTO:
             for i in data:
                 try:
                     if bool(stream.__dict__[i]):
+                        logger.info(f"Adding {stream.__dict__[i]}")
                         self.data[i] = stream.__dict__[i]
                 except Exception as exc:
                     logger.warn(f'Unable to find reference for: {exc}')
                     pass
+        logger.info(f"GATHERED DATA = {self.data}")
         count += 1
 
     def assign_data_to_proper_destinations(self, destination=required_destination_tuple):
