@@ -24,9 +24,11 @@ def handler(event, context):
 
         try:
             metadata = FFProbe(video_file=local_file_name)
+            logger.info(f'METADATA STREAM = {metadata.show_json_format()}')
 
             result = FFprobeDTO()
             result.gather_required_data(metadata)
+            logger.info(f'DATA SEPARATED = {result.data}')
             result.assign_data_to_proper_destinations()
 
             os.system(f"rm /tmp/{event_object}")

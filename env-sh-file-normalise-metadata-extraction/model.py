@@ -10,6 +10,7 @@ import subprocess
 logger = Logger()
 configuration = json.loads(get_latest_configuration())
 
+
 def slice_stream_tags(datalines: []) -> []:
     """
     Slices the input data to return a list of tuples representing the positions of each
@@ -140,26 +141,50 @@ class FFprobeDTO:
     required_destination_tuple = tuple(required_destination)
 
     def __init__(self):
+        self.video_data = {}
+        self.audio_data = {}
         self.data = {}
         self.destination_data = {}
 
     def gather_required_data(self, metadata: FFProbe, data=required_data_tuple):
 
-        count = 0
-        for stream in metadata.streams:
+        for stream in metadata.video:
             for i in data:
                 try:
                     if bool(stream.__dict__[i]):
                         logger.info(f"Adding {stream.__dict__[i]}")
-                        self.data[i] = stream.__dict__[i]
+                        self.video_data[i] = stream.__dict__[i]
                 except Exception as exc:
-                    logger.warn(f'Unable to find reference for: {exc}')
+                    logger.warn(f'Unable to find reference for {i} in video_stream: {exc}')
                     pass
-        logger.info(f"GATHERED DATA = {self.data}")
-        count += 1
+        for stream in metadata.audio:
+            for i in data:
+                try:
+                    if bool(stream.__dict__[i]):
+                        logger.info(f"Adding {stream.__dict__[i]}")
+                        self.audio_data[i] = stream.__dict__[i]
+                except Exception as exc:
+                    logger.warn(f'Unable to find reference for {i} in audio_stream: {exc}')
+                    pass
+
+        for k, v in self.video_data.items():
+            self.data[f'video.{k}'] = v
+        for k, v in self.audio_data.items():
+            self.data[f'audio.{k}'] = v
 
     def assign_data_to_proper_destinations(self, destination=required_destination_tuple):
-        if bool(self.data):
-            for key, value in self.data.items():
-                if key in destination[0].keys():
-                    self.destination_data[destination[0][key]] = self.data[key]
+        logger.info(f'Assigning destinations to: {self.data}. Destinations : {destination}')
+        destination_dict = destination[0]
+        for key, value in self.data.items():
+            key_split = tuple(key.split('.'))
+            if key_split[1] == 'codec_name':
+                logger.info(f'Assigning codec.')
+                if key_split[0] == 'video':
+                    self.destination_data['x-amz-meta-video-codec'] = value
+                elif key_split[0] == 'audio':
+                    self.destination_data['x-amz-meta-audio-codec'] = value
+            else:
+                if key_split[1] in destination_dict.keys():
+                    self.destination_data[destination_dict.get(key_split[1])] = value
+
+
