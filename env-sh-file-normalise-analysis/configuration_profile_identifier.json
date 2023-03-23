@@ -1,0 +1,103 @@
+{
+  "encode_logic": [
+    {
+      "rule_type": "not_equal",
+      "input_parameter": "x-amz-meta-container-format",
+      "input_values": [
+        "mp4",
+        "mov",
+        "mxf",
+        "ts",
+        "abc"
+      ],
+      "output_parameter": [
+        "path.to.mediaencoder.json.parameter"
+      ]
+    },
+    {
+      "rule_type": "not_equal",
+      "input_parameter": "x-amz-meta-video-codec",
+      "input_values": [
+        "h264",
+        "prores"
+      ],
+      "output_parameter": [
+        "path.to.mediaencoder.json.parameter"
+      ]
+    },
+    {
+      "rule_type": "not_equal",
+      "input_parameter": "x-amz-meta-video-resolution",
+      "input_values": [
+        "720x576",
+        "720x480",
+        "1920x1080"
+      ],
+      "output_parameter": [
+        "path.to.mediaencoder.json.parameter"
+      ]
+    },
+    {
+      "rule_type": "not_equal",
+      "input_parameter": "x-amz-meta-video-min_framerate",
+      "input_values": [
+        "25",
+        "29.97",
+        "30",
+        "50",
+        "59.94",
+        "60"
+      ],
+      "output_parameter": [
+        "path.to.mediaencoder.json.parameter"
+      ]
+    },
+    {
+      "rule_type": "equal",
+      "input_parameter": "x-amz-meta-video-field_order",
+      "input_values": [
+        "progressive"
+      ],
+      "output_parameter": [
+        "path.to.mediaencoder.json.parameter"
+      ]
+    },
+    {
+      "rule_type": "not_equal",
+      "input_parameter": "x-amz-meta-audio-codec",
+      "input_values": [
+        "AAC",
+        "MP3"
+      ],
+      "output_parameter": [
+        "path.to.mediaencoder.json.parameter"
+      ]
+    },
+    {
+      "rule_type": "not_equal",
+      "input_parameter": "x-amz-meta-audio-sample_rate",
+      "input_values": [
+        "48000"
+      ],
+      "output_parameter": [
+        "path.to.mediaencoder.json.parameter"
+      ]
+    }
+  ],
+  "output_logic": [
+    {
+      "rule_type": "equal",
+      "input_parameter": "x-amz-meta-video-min_framerate",
+      "input_values": [
+        "25",
+        "50",
+        "29.97",
+        "59.94"
+      ],
+      "output_parameter": [
+        "path.to.mediaencoder.json.parameter",
+        "path.to.mediaencoder.json.parameter"
+      ]
+    }
+  ]
+}

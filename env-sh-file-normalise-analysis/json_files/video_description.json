@@ -1,0 +1,9 @@
+{
+  "CodecSettings": {
+    "Codec": "H_264",
+    "H264Settings": {
+      "InterlaceMode": "",
+      "MaxBitRate": 100000000
+    }
+  }
+}

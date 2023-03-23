@@ -1,0 +1,10 @@
+{
+  "detail": {
+    "x-amz-meta-video-Resolution-Width": "1920",
+    "x-amz-meta-video-Resolution-Height": "1080",
+    "x-amz-meta-video-codec": "h264",
+    "x-amz-meta-video-field_order": "tt",
+    "x-amz-meta-audio-codec": "aac",
+    "x-amz-meta-audio-sample_rate": "48000"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "CodecSettings": {
+    "Codec": "ACC",
+    "ACCSettings": {
+      "Bitrate": 96000,
+      "SampleRate": 48000
+    }
+  }
+}
