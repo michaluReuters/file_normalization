@@ -134,6 +134,10 @@ class FFStream:
         return val
 
 
+def format_framerate(param: str):
+    return param.split('/')[0]
+
+
 class FFprobeDTO:
     required_data = {i['source-field'] for i in configuration['data']}
     required_data_tuple = tuple(required_data)
@@ -150,6 +154,12 @@ class FFprobeDTO:
 
         for stream in metadata.video:
             for i in data:
+                if i == 'avg_frame_rate':
+                    if bool(stream.__dict__[i]):
+                        frame_rate = format_framerate(stream.__dict__[i])
+                        logger.info(f"Adding {frame_rate}")
+                        self.video_data[i] = frame_rate
+                    continue
                 try:
                     if bool(stream.__dict__[i]):
                         logger.info(f"Adding {stream.__dict__[i]}")
@@ -159,6 +169,8 @@ class FFprobeDTO:
                     pass
         for stream in metadata.audio:
             for i in data:
+                if i == 'avg_frame_rate':
+                    continue
                 try:
                     if bool(stream.__dict__[i]):
                         logger.info(f"Adding {stream.__dict__[i]}")
@@ -186,5 +198,3 @@ class FFprobeDTO:
             else:
                 if key_split[1] in destination_dict.keys():
                     self.destination_data[destination_dict.get(key_split[1])] = value
-
-
