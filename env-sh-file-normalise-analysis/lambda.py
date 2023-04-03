@@ -1,38 +1,75 @@
-import json
 import boto3 as boto3
 from aws_lambda_powertools import Logger
-from utils import get_latest_configuration
+from model import TemplateDTO
 
 logger = Logger()
 client = boto3.client('events')
-workflow = 'APP_DEFAULT_WORKFLOW_ID'
-template = 'APP_DEFAULT_TEMPLATE_ID'
-configuration_profile_identifier = json.loads(get_latest_configuration(workflow))
-default_template = json.loads(get_latest_configuration(template))
 
 
 @logger.inject_lambda_context(log_event=True)
 def handler(event, context):
     input_dict = event['detail']
+    source_prefix = input_dict.pop('source_prefix')
     dict_event = combine_resolution(input_dict)
 
     logger.info(f'DICT = {dict_event}')
+    template = TemplateDTO()
 
-    for i in configuration_profile_identifier['encode_logic']:
+    check_required_values(dict_event, template, 'encode_logic', source_prefix)
+    check_required_values(dict_event, template, 'output_logic', source_prefix)
+
+    if template.correct_framerate and evaluate_template(template):
+        logger.info(f'FRAMERATE CORRECT, ALL OTHER FALSE -> {template.default_template}')
+    #     TODO SEND DATA TO OUTPUT 03.04.2023
+
+    elif template.correct_framerate and not evaluate_template(template):
+        logger.info(f'FRAMERATE CORRECT, AT LEAST ONE FALSE -> {template.default_template}')
+    #     TODO SEND DATA TO OUTPUT 03.04.2023
+
+    elif not template.correct_framerate:
+        logger.info(f'FRAMERATE INCORECT -> {template.default_template}')
+    #   TODO SEND DATA TO OUTPUT 03.04.2023
+    else:
+        logger.info(f'LOOKS OK? -> {template.default_template}')
+
+
+def evaluate_template(template) -> bool:
+    if all([not getattr(template, f) for f in dir(template) if
+            not callable(getattr(template, f)) and not f.startswith("__")]):
+        return True
+    else:
+        return False
+
+
+def check_required_values(dict_event, template, logic_input: str, source: {}):
+    for i in template.configuration_profile_identifier[logic_input]:
+
+        if i['input_parameter'] == 'x-amz-meta-container-format':
+            container_rule = i['rule_type']
+            container_format = source.get('prefix').split('.')[1]
+            logger.info(f'Container format to be checked is: {container_format}')
+            check_value_for_rule(i, container_rule, template, container_format)
+            continue
+
         value_to_compare = dict_event.get(i['input_parameter'])
         if value_to_compare is None:
             continue
         rule_type = i['rule_type']
+        check_value_for_rule(i, rule_type, template, value_to_compare)
 
-        if rule_type == 'not_equal':
-            # if value_to_compare not in i['input_values']:
-            if not any(value_to_compare.casefold() == item.casefold() for item in i['input_values']):
-                update_default_template(i['input_parameter'])
-        else:
-            # if value_to_compare in i['input_values']:
-            if any(value_to_compare.casefold() == item.casefold() for item in i['input_values']):
-                update_default_template(i['input_parameter'])
-    logger.info(f"MODIFIED TEMPLATE = {default_template}")
+
+def check_value_for_rule(i, rule_type, template, value_to_compare):
+    if rule_type == 'not_equal':
+        logger.info(f'Comparing {value_to_compare.casefold()} for not_equal')
+        if not value_to_compare.lower() in [x.lower() for x in i['input_values']]:
+            logger.info(f'COMPARED {value_to_compare}')
+            logger.info(f'LIST = {[x.lower() for x in i["input_values"]]}')
+            template.update_default_template(i['input_parameter'])
+
+    else:
+        logger.info(f'Comparing {value_to_compare.casefold()} for equal')
+        if value_to_compare.lower() in [x.lower() for x in i['input_values']]:
+            template.update_default_template(i['input_parameter'])
 
 
 def combine_resolution(metadata):
@@ -43,50 +80,3 @@ def combine_resolution(metadata):
         del metadata["x-amz-meta-video-Resolution-Width"]
         del metadata["x-amz-meta-video-Resolution-Height"]
     return metadata
-
-
-def update_default_template(variable):
-    default_template['Settings']['OutputGroups'] = {'Outputs': {}}
-    if variable == 'x-amz-meta-container-format':
-        __update_container()
-    elif variable == 'x-amz-meta-video-codec':
-        __update_codec()
-    elif variable == "x-amz-meta-video-resolution":
-        __update_resolution()
-    elif variable == "x-amz-meta-audio-codec":
-        __update_audio_codec()
-    elif variable == "x-amz-meta-audio-sample_rate":
-        __update_sample_rate()
-    pass
-
-
-def __update_container():
-    logger.info(f'File extension does not match allowed extensions. Assigning extension as MP4.')
-    default_template['Settings']['OutputGroups']['Outputs']['ContainerSettings'] = {'Container': 'MP4'}
-
-
-def __update_codec():
-    logger.info(f'Codec does not match allowed codecs. Assigning default codec data.')
-    with open('./json_files/video_description.json') as file:
-        default_template['Settings']['OutputGroups']['Outputs']['VideoDescription'] = json.load(file)
-
-
-def __update_resolution():
-    logger.info(f'Resolution does not match allowed resolutions. Assigning default resolution value.')
-    with open('./json_files/resolution.json') as file:
-        if bool(default_template['Settings']['OutputGroups']['Outputs']['VideoDescription']):
-            default_template['Settings']['OutputGroups']['Outputs']['VideoDescription'].update(json.load(file))
-        else:
-            default_template['Settings']['OutputGroups']['Outputs']['VideoDescription'] = json.load(file)
-
-
-def __update_audio_codec():
-    logger.info(f'Audio codec does not match allowed codecs. Assigning default audio codec.')
-    with open('./json_files/audio.json') as file:
-        default_template['Settings']['OutputGroups']['Outputs']['AudioDescription'] = json.load(file)
-
-
-def __update_sample_rate():
-    logger.info(f'Sample Rate does not match allowed values. Assigning default Sample Rate')
-    default_template['Settings']['OutputGroups']['Outputs']['AudioDescription']['CodecSettings']['ACCSettings'][
-        'SampleRate'] = 48000
